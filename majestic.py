@@ -1,4 +1,3 @@
-
 import telebot
 import numpy as np
 from collections import Counter
@@ -19,7 +18,7 @@ from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
 
 # Список разрешенных пользователей
-ALLOWED_USERS = [1151721218, 1386394302, 1174100352, 1435884905, 2019201013, 5515054051, 943209351]
+ALLOWED_USERS = []
 
 class RoulettePredictor:
     def __init__(self, data):
@@ -43,7 +42,6 @@ class RoulettePredictor:
         self._build_sequences()
         self._calculate_global_stats()
 
-        # ML components initialization
         self.model = None
         self.scaler = StandardScaler()
         self.ml_features = None
@@ -54,7 +52,6 @@ class RoulettePredictor:
     
 
     def _get_color(self, number):
-        """Определение цвета числа"""
         if number in self.black_numbers:
             return 'Черное'
         elif number in self.red_numbers:
@@ -94,15 +91,12 @@ class RoulettePredictor:
     def _create_features(self, last_numbers):
       features = []
       
-      # Преобразуем в целые числа, если это не так
       last_numbers = [int(x) if isinstance(x, str) and x != '00' else 37 if x=='00' else x for x in last_numbers]
 
-      # Ограничиваем длину last_numbers до window_size
       last_numbers = last_numbers[-self.window_size:]
       
-      # Дополняем нулями, если длина недостаточна
       padding_length = self.window_size - len(last_numbers)
-      features.extend([37] * padding_length)  # Дополняем 37, так как "00" = 37
+      features.extend([37] * padding_length)
       features.extend(last_numbers)
       
       return np.array(features).reshape(1, -1)
@@ -141,14 +135,7 @@ class RoulettePredictor:
             models = {
                 'Random Forest': RandomForestClassifier(random_state=42, class_weight='balanced'),
                 'Gradient Boosting': GradientBoostingClassifier(random_state=42, learning_rate=0.1, n_estimators=100, max_depth=3),
-                'XGBoost': XGBClassifier(use_label_encoder=False, eval_metric='logloss', learning_rate=0.1, n_estimators=200, max_depth=3),
-                #'Neural Network': MLPClassifier(random_state=42, max_iter=500, hidden_layer_sizes=(100, 50), early_stopping=True),
-                 #'SVM': SVC(probability=True, random_state=42, class_weight='balanced', kernel='rbf', gamma='scale', C=1), #Удаляем SVM, для скорости.
-                 #'Logistic Regression': LogisticRegression(random_state=42, max_iter=200, solver='liblinear', class_weight='balanced'), #Удаляем LR, для скорости.
-                 #'K-Nearest Neighbors': KNeighborsClassifier(n_neighbors=5),  #Удаляем K-NN, для скорости.
-                #'Gaussian Naive Bayes': GaussianNB() #Удаляем GNB, для скорости.
-                #'Decision Tree': DecisionTreeClassifier(random_state=42) #Удаляем DT, для скорости.
-                
+                'XGBoost': XGBClassifier(use_label_encoder=False, eval_metric='logloss', learning_rate=0.1, n_estimators=200, max_depth=3)
             }
 
             for name, model in models.items():
@@ -288,17 +275,13 @@ class RoulettePredictor:
             f.write(f"\nВероятность '00': {patterns['zero_double']:.2f}%\n")
             f.write("-" * 40 + "\n")
 
-# Инициализация бота
-bot = telebot.TeleBot('8080531778:AAHgRBE-VoJRRD85tULqW7peL8CutuHHvEM')
+bot = telebot.TeleBot('your_token')
 
-# Инициализация начальных данных
 initial_data = "8;24;22;32;2;23;11;29;9;8;16;1;18;34;1;14;5;34;25;7;8;26;2;10;5;4;32;29;5;10;20;8;35;13;15;29;11;4;29;1;14;33;31;13;11;3;8;23;4;11;26;29;18;00;31;7;31;1;20;22;8;34;10;6;4;15;4;24;4;6;34;11;24;9;22;27;34;00;20;9;25;20;11;27;20;6;24;9;5;35;35;14;35;5;3;0;13;30;24;14;25;17;25;26;16;2;26;34;11;17;11;11;4;22;15;28;33;17;22;20;10;16;0;3;14;27;4;12;24;10;19;2;6;11;4;29;30;10;35;12;18;34;32;6;30;12;24;12;1;14;12;2;5;28;24;19;31;36;19;32;14;21;22;2;14;29;8;6;31;29;6;15;11;8;2;21;14;30;6;11;31;31;16;12;25;00;18;34;16;6;32;34;1;0;17;25;23;33;35;6;36;4;27;23;30;34;15;14;13;30;10;10;14;9;5;31;36;27;18;7;12;3;17;26;11;4;18;32;13;35;19;15;13;11;24;16;18;11;31;3;28;20;5;22;32;32;0;32;30;27;30;29;35;24;23;30;26;15;32;32;29;11;3;18;18;23;9;17;36;12;9;31;15;31;28;36;7;13;16;19;6;20;21;25;21;25;33;3;12;33;0;27;7;10;18;12;17;28;23;2;1;17;36;33;33;26;32;30;5;24;33;12;22;19;"
 
-# Словарь для хранения предикторов для разных чатов
 predictors = {}
 
 
-# Словарь для отслеживания авторизованных пользователей
 authorized_users = set()
 
 @bot.message_handler(commands=['start'])
@@ -308,7 +291,6 @@ def start(message):
     if user_id in ALLOWED_USERS:
         authorized_users.add(user_id)
         
-        # Создание кнопок для выбора проекта
         markup = types.ReplyKeyboardMarkup(row_width=2)
         item1 = types.KeyboardButton("Majestic RP")
         item2 = types.KeyboardButton("GTA5RP")
@@ -336,14 +318,12 @@ def handle_project_choice(message):
 def handle_number(message):
     user_id = message.from_user.id
     
-    # Проверка авторизации
     if user_id not in ALLOWED_USERS:
         bot.reply_to(message, "Доступ запрещен")
         return
         
     chat_id = message.chat.id
     
-    # Создаем предиктор для чата, если его еще нет
     if chat_id not in predictors:
         bot.reply_to(message, "Пожалуйста, выберите проект с помощью кнопок.")
         return
@@ -351,7 +331,6 @@ def handle_number(message):
     try:
         input_number = message.text.strip()
         
-        # Проверка ввода
         if input_number == '00':
             number = '00'
         else:
@@ -359,46 +338,36 @@ def handle_number(message):
             if not (0 <= number <= 36):
                 raise ValueError()
 
-        # Получаем предиктор для текущего чата
         predictor = predictors[chat_id]
         
-        # Добавляем новое число и получаем статистику
         predictor.add_new_data(number)
         
-        # Получаем предсказания из обоих методов
         sequence_predictions = predictor.predict_next_numbers(number)
         ml_predictions = predictor.predict_with_ml(predictor.data[-3:])
         patterns = predictor.analyze_patterns()
         
-        # Сохраняем в файл
         predictor.save_predictions_to_file(sequence_predictions, ml_predictions, patterns, number)
 
-        # Формируем ответное сообщение
         response = f"📊 Прогноз после числа {number}:\n\n"
-        
-        # Добавляем предсказания на основе последовательности
+
         response += "На основе последовательности:\n"
         for predicted_number, probability in sequence_predictions:
             response += f"Число {predicted_number}: {probability:.2f}% вероятность\n"
         
-        # Добавляем предсказания на основе ML
         response += "\nНа основе ML модели:\n"
         for predicted_number, probability in ml_predictions:
             response += f"Число {predicted_number}: {probability*100:.2f}% вероятность\n"
         
         response += "\n📈 Текущая статистика:\n"
         
-        # Цвета
         response += "\nЦвета:\n"
         for color, percent in patterns['colors'].items():
             response += f"{color}: {percent:.2f}%\n"
         
-        # Чётные/Нечётные
         response += "\nЧётные/Нечётные:\n"
         for category, percent in patterns['even_odd'].items():
             response += f"{category}: {percent:.2f}%\n"
         
-        # Диапазоны
         response += "\nДиапазоны:\n"
         for range_name, percent in sorted(patterns['ranges'].items()):
              if range_name == '0':
@@ -406,10 +375,8 @@ def handle_number(message):
              else:
                 response += f"{range_name}: {percent:.2f}%\n"
         
-        # Вероятность 00
         response += f"\nВероятность '00': {patterns['zero_double']:.2f}%"
 
-        # Отправляем ответ
         bot.reply_to(message, response)
 
     except ValueError:
@@ -417,7 +384,6 @@ def handle_number(message):
     except Exception as e:
         bot.reply_to(message, f"Произошла ошибка: {str(e)}")
 
-# Запуск бота
 if __name__ == "__main__":
     print("Бот запущен...")
     bot.infinity_polling()
